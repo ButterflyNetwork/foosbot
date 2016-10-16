@@ -19,7 +19,7 @@ slack = slacker.Slacker(config['slacktoken'])
 def getniceuser(users, n):
     uc = filter(lambda x: x['name'] == n, users)
     if len(uc) != 1:
-        print "Unable to find user %s in slack, please check your config" % (config['adminuser'])
+        print "Unable to find user %s in slack, please check your config" % (n)
         sys.exit(1)
     else:
         print "User %s found with id %s" % (n, uc[0]['id'])
