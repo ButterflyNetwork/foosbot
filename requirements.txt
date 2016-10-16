@@ -1,0 +1,5 @@
+slacker
+websocket-client
+PyYAML
+numpy
+theano
