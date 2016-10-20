@@ -1,8 +1,6 @@
 import collections
 import datetime
 
-import loldb
-
 
 def get_all_players(matches):
     # collects UIDs for any player to have played in a match
