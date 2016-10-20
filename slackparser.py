@@ -1,13 +1,11 @@
 import json
 import traceback
 import sys
-import core
 import datetime
-import loldb
-import numpy
-import ranking
-import theanorank
 
+import butterflyrank
+import core
+import loldb
 
 _nextid = 1
 
@@ -190,8 +188,7 @@ def formatMatch(allusers, m):
 
 def processRank(slack, args):
     m = loldb.getmatches()
-    # d = ranking.getRankings(m)
-    td = theanorank.getRanking(m)
+    td = butterflyrank.get_rankings(m)
     # print d
     # print td
     mc = loldb.getgamecounts()
@@ -234,31 +231,24 @@ def processStats(slack, args, user):
     m = loldb.getmatches()
     mc = loldb.getgamecounts()[uid]
     lg = loldb.getlastgame(uid)
-    td = theanorank.getRanking(m)
-    bw = theanorank.getBestWorst(m, uid)
+    td = butterflyrank.get_rankings(m)
 
     nn = getNiceName(allusers, uid)
 
     r1t = "Stats for %s" % nn
     div = '-' * (len(r1t))
-    r1ta = "Skill level: %.1f" % (10.0 + (10.0 * td[uid]))
-    r2t = "Matches played: %i" % (mc)
-    r2ta = "Last match: %s" % (formatMatch(allusers, lg))
+    r1ta = "Skill level: %.1f" % td[uid]
+    r2t = "Matches played: %i" % mc
+    r2ta = "Last match: %s" % formatMatch(allusers, lg)
 
     allt = [r1t, div, r1ta, r2t, r2ta]
-
-    if mc > 1:
-        r3t = "Best recent match: %s" % (formatMatch(allusers, bw[-1][1]))
-        r4t = "Worst recent match: %s" % (formatMatch(allusers, bw[0][1]))
-        allt.append(r3t)
-        allt.append(r4t)
 
     return simpleResp('```' + '\n'.join(allt) + '```')
 
 
 def processPredict(args):
     m = loldb.getmatches()
-    d = theanorank.getRanking(m)
+    d = butterflyrank.get_rankings(m)
 
     players1 = []
     while len(args) > 0 and args[0].startswith('<@'):
@@ -273,25 +263,20 @@ def processPredict(args):
     while len(args) > 0 and args[0].startswith('<@'):
         players2.append(args.pop(0)[2:-1])
 
-    r1 = []
-    r2 = []
+    r1 = 0.0
+    r2 = 0.0
     for p in players1:
-        if not p in d:
+        if p not in d:
             return simpleResp("I don't know the rank of <@%s>" % p)
-        r1.append(d[p])
+        r1 += d[p]
 
     for p in players2:
-        if not p in d:
+        if p not in d:
             return simpleResp("I don't know the rank of <@%s>" % p)
-        r2.append(d[p])
+        r2 += d[p]
 
-    sd = numpy.mean(r2) - numpy.mean(r1)
-
-    pred = ranking.generatePrediction(sd, 10000)
-
-    line1 = "I predict team 2 has a %.0f%% chance of winning" % (pred[0]*100.0)
-    line2 = "The most likely outcome is %i - %i (%.0f%% chance)" % \
-            (pred[1][0], pred[1][1], pred[2]*100.0)
+    line1 = "I predict team %d%% will win." % (1 if r1 > r2 else 2)
+    line2 = "Now stop predicting and just play the game!"
 
     return simpleResp('\n'.join([line1, line2]))
 
