@@ -31,7 +31,7 @@ def _newdb():
 
 
 def getrankings():
-    return butterflyrank.getRankings(_getdb()['matches'].values())
+    return butterflyrank.get_rankings(_getdb()['matches'].values())
 
 
 def getmatches():
