@@ -111,7 +111,7 @@ def formatRanking(slack, d, mc, lastg):
 
     spb = lambda x: unicode(x[0]) + u'\u200B' + unicode(x[1:])
 
-    for n in sorted(d.items(), key=lambda x: x[1], reverse=True):
+    for n in sorted(d.items(), key=lambda x: x[1][0], reverse=True):
         name = spb(getNiceName(allusers, n[0]))
 
         timediff = now - lastg[n[0]]
@@ -132,15 +132,15 @@ def formatRanking(slack, d, mc, lastg):
             # continue
 
         tc += 1
-        if n[1] < l - 0.1:
+        if n[1][0] < l - 0.1:
             c = tc
-            l = n[1]
+            l = n[1][0]
         else:
             iseq.append(c)
-        ss = "%.1f" % n[1]
+        ss = "%.1f" % n[1][0]
         if mc[n[0]] < 3:
             ss = '*'
-        r.append((c, "%s (%s), W-L: %i-%i" % (name, ss, n[2], n[3])))
+        r.append((c, "%s (%s), W-L: %i-%i" % (name, ss, n[1][1], n[1][2])))
 
     r = map(lambda x: mangleit(x, iseq), r)
 
@@ -236,7 +236,7 @@ def processStats(slack, args, user):
 
     r1t = "Stats for %s" % nn
     div = '-' * (len(r1t))
-    r1ta = "Skill level: %.1f" % td[uid][0]
+    r1ta = "Skill level (0-10): %.1f" % td[uid][0]
     r2t = "W-L: %i-%i" % (td[uid][1], td[uid][2])
     r2ta = "Last match: %s" % formatMatch(allusers, lg)
 
