@@ -137,7 +137,7 @@ def formatRanking(slack, d, mc, lastg):
             l = n[1]
         else:
             iseq.append(c)
-        ss = "%.1f" % (10.0 + (n[1]*10.0))
+        ss = "%.1f" % n[1]
         if mc[n[0]] < 3:
             ss = '*'
         r.append((c, "%s (%s)" % (name, ss)))
