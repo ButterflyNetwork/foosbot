@@ -140,7 +140,7 @@ def formatRanking(slack, d, mc, lastg):
         ss = "%.1f" % n[1]
         if mc[n[0]] < 3:
             ss = '*'
-        r.append((c, "%s (%s)" % (name, ss)))
+        r.append((c, "%s (%s), W-L: %i-%i" % (name, ss, n[2], n[3])))
 
     r = map(lambda x: mangleit(x, iseq), r)
 
@@ -229,7 +229,6 @@ def processStats(slack, args, user):
     allusers = slack.users.list().body
 
     m = loldb.getmatches()
-    mc = loldb.getgamecounts()[uid]
     lg = loldb.getlastgame(uid)
     td = butterflyrank.get_rankings(m)
 
@@ -237,8 +236,8 @@ def processStats(slack, args, user):
 
     r1t = "Stats for %s" % nn
     div = '-' * (len(r1t))
-    r1ta = "Skill level: %.1f" % td[uid]
-    r2t = "Matches played: %i" % mc
+    r1ta = "Skill level: %.1f" % td[uid][0]
+    r2t = "W-L: %i-%i" % (td[uid][1], td[uid][2])
     r2ta = "Last match: %s" % formatMatch(allusers, lg)
 
     allt = [r1t, div, r1ta, r2t, r2ta]
@@ -268,12 +267,12 @@ def processPredict(args):
     for p in players1:
         if p not in d:
             return simpleResp("I don't know the rank of <@%s>" % p)
-        r1 += d[p]
+        r1 += d[p][0]
 
     for p in players2:
         if p not in d:
             return simpleResp("I don't know the rank of <@%s>" % p)
-        r2 += d[p]
+        r2 += d[p][0]
 
     line1 = "I predict team %d%% will win." % (1 if r1 > r2 else 2)
     line2 = "Now stop predicting and just play the game!"

@@ -71,9 +71,16 @@ def get_rankings(matches):
         temporal_decay[p] = 0.999 ** float((datetime.datetime.now() - latest_match[p]).days)
         score_final[p] = (4.0 * score_a[p] + 4.0 * score_b[p] + score_c[p]) * temporal_decay[p]
 
-    # organized uids and scores
+    # organized uids, scores, wins, losses
     scores_by_player = [0] * len(players)
+    wins_by_player = [0] * len(players)
+    losses_by_player = [0] * len(players)
     for i, p in enumerate(players):
         scores_by_player[i] = score_final[p]
+        wins_by_player[i] = num_wins[p]
+        losses_by_player[i] = num_matches[p] - num_wins[p]
 
-    return {k: v for k, v in zip(players, scores_by_player)}
+    return {k: (v1, v2, v3) for k, v1, v2, v3 in zip(players,
+                                                     scores_by_player,
+                                                     wins_by_player,
+                                                     losses_by_player)}
