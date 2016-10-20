@@ -1,9 +1,9 @@
 import pickle
-import ranking
 import numpy
 import collections
 import datetime
 
+import butterflyrank
 
 _dbfile = 'foosdb.pickle'
 _dbhandle = None
@@ -31,7 +31,7 @@ def _newdb():
 
 
 def getrankings():
-    return ranking.getRankings(_getdb()['matches'].values())
+    return butterflyrank.get_rankings(_getdb()['matches'].values())
 
 
 def getmatches():
