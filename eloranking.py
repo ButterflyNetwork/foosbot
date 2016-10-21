@@ -56,7 +56,7 @@ def predict_winner(matches, pl_a, pl_b):
     rankings = get_rankings(matches)
     expected_a, expected_b = expected_point_percentages(rankings[pl_a], rankings[pl_b])
     if expected_a > expected_b:
-        return "{} has a {:.1f}% chance of beating {}".format(pl_a, expected_a*100, pl_b)
+        return (pl_a, expected_a * 100, pl_b)
     else:
-        return "{} has a {:.1f}% chance of beating {}".format(pl_b, expected_b*100, pl_a)
+        return (pl_b, expected_b * 100, pl_a)
 

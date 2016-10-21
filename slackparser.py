@@ -4,6 +4,7 @@ import sys
 import datetime
 
 import butterflyrank
+import eloranking
 import core
 import loldb
 
@@ -188,16 +189,13 @@ def formatMatch(allusers, m):
 
 def processRank(slack, args):
     m = loldb.getmatches()
-    td = butterflyrank.get_rankings(m)
-    # print d
-    # print td
-    mc = loldb.getgamecounts()
-    lastg = loldb.getlastgameall()
-    out = formatRanking(slack, td, mc, lastg)
-    # legstr = ''
-    # if numpy.min(mc.values()) < 3:
-    #     legstr = '\n* has played less than 3 games'
-    return simpleResp('```' + '\n'.join(out) + '```')
+    elos = eloranking.get_rankings(m)
+    elos = sorted(elos.items(), key=lambda x: x[1], reverse=True)
+
+    allusers = slack.users.list().body
+    nn = lambda x: getNiceName(allusers, x)
+
+    return simpleResp('```{}\n```'.format('\n'.join(['{}: {}'.format(nn(k), v) for (k, v) in elos])))
 
 
 def processDelete(args):
@@ -247,37 +245,24 @@ def processStats(slack, args, user):
 
 def processPredict(args):
     m = loldb.getmatches()
-    d = butterflyrank.get_rankings(m)
-
-    players1 = []
-    while len(args) > 0 and args[0].startswith('<@'):
-        players1.append(args.pop(0)[2:-1])
-
-    if len(args) == 0:
-        return simpleResp("Was expecting a 'vs' at some point")
-
-    args.pop(0)
-
-    players2 = []
-    while len(args) > 0 and args[0].startswith('<@'):
-        players2.append(args.pop(0)[2:-1])
-
-    r1 = 0.0
-    r2 = 0.0
-    for p in players1:
-        if p not in d:
-            return simpleResp("I don't know the rank of <@%s>" % p)
-        r1 += d[p][0]
-
-    for p in players2:
-        if p not in d:
-            return simpleResp("I don't know the rank of <@%s>" % p)
-        r2 += d[p][0]
-
-    line1 = "I predict team %d%% will win." % (1 if r1 > r2 else 2)
-    line2 = "Now stop predicting and just play the game!"
-
-    return simpleResp('\n'.join([line1, line2]))
+    print(args)
+    try:
+        middle = args.index('vs')
+        print(middle)
+        p1 = args[middle-1][2:-1]
+        print(p1)
+        p2 = args[middle+1][2:-1]
+        print(p2)
+        allusers = slack.users.list().body
+        nn = lambda x: getNiceName(allusers, x)
+        predict_fmt = lambda w, od, l: "{} has a {:.1f}% chance of beating {}".format(nn(w), od, nn(l))
+        return (simpleResp(predict_fmt(eloranking.predict_winner(m, p1, p2))+"\n"))
+    except ValueError:
+        return simpleResp("Perhaps you didn't use \'vs\'?\n")
+    except KeyError:
+        return simpleResp("Error in finding one or both players.\n")
+    except:
+        return simpleResp("An unknown error occured.")
 
 
 def processHelp(args):
