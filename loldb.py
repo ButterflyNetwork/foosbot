@@ -15,15 +15,16 @@ def _getdb():
         try:
             _dbhandle = pickle.load(open(_dbfile))
         except:
-            print "Unable to load database, creating new one"
+            print("Unable to load database, creating new one")
             _dbhandle = _newdb()
+    print("Db dump: ", _dbhandle)
     return _dbhandle
 
 
 def _commitback():
     if _dbhandle is None:
         raise Exception("Handle is None?")
-    pickle.dump(_dbhandle, open(_dbfile, 'w'))
+    pickle.dump(_dbhandle, open(_dbfile, 'wb'))
 
 
 def _newdb():

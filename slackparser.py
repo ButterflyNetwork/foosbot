@@ -222,7 +222,7 @@ def processStats(slack, args, user):
 
         uid = args[0][2:-1]
 
-    print "Stats UID: %s" % (uid)
+    print("Stats UID: %s" % (uid))
 
     allusers = slack.users.list().body
 
@@ -286,28 +286,20 @@ def processHelp(args):
 
 def processMessage(slack, config, _msg):
     try:
-
         _fooschan = config['fooschan']
         _adminuser = config['adminuser']
-        # print "PROCESSING"
-        # print type(_msg)
         msg = json.loads(_msg)
-        # print "LOADED"
 
         if not 'type' in msg:
             return []
 
         if msg['type'] != 'message':
-            # print "NOTMSG"
             return []
         if msg['channel'] != _fooschan:
-            # print "NOTCHAN"
             return []
 
-        # print "INCHANNEL"
-
         if not 'text' in msg:
-            print "Ignoring possible edit?"
+            print("Ignoring possible edit?")
             return []
 
         text = msg['text']
