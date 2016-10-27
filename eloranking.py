@@ -1,7 +1,7 @@
 import itertools
 import math
 
-base_K = 60
+base_K = 100
 
 def get_all_players(matches):
     # collects UIDs for any player to have played in a match
@@ -14,21 +14,25 @@ def adjusted_K(differential):
 
 
 def expected_point_percentages(elo_a, elo_b):
-    expected_a = 1.0 / (1 + 10**((elo_b - elo_a) / 400))
-    expected_b = 1.0 / (1 + 10**((elo_a - elo_b) / 400))
-    return (expected_a, expected_b)
+    a = 1.0 / (1.0 + 10.0**(float(elo_b - elo_a) / 400.0))
+    b = 1.0 / (1.0 + 10.0**(float(elo_a - elo_b) / 400.0))
+    return (a, b)
 
 
 def elo_update(winner_elo, loser_elo, winner_score, loser_score):
     winner_expected, loser_expected = expected_point_percentages(winner_elo, loser_elo)
+    assert(0.999 <= winner_expected + loser_expected <= 1.001)
 
-    winner_actual = winner_score / (winner_score + loser_score)
-    loser_actual = loser_score / (winner_score + loser_score)
+    winner_actual = float(winner_score) / (winner_score + loser_score)
+    loser_actual = float(loser_score) / (winner_score + loser_score)
+    assert(0.999 <= winner_actual + loser_actual <= 1.001)
 
     K = adjusted_K(winner_score - loser_score)
+    adjustment = K * (winner_actual - winner_expected)
 
-    winner_elo += K * (winner_actual - winner_expected) + base_K * (winner_actual - 0.5)
-    loser_elo += K * (loser_actual - loser_expected) + base_K * (loser_actual - 0.5)
+    winner_elo += adjustment
+    loser_elo -= adjustment
+    # 0.5's are just to round to nearest int, rather than just down
     return (int(winner_elo+0.5), int(loser_elo+0.5))
 
 
@@ -38,6 +42,7 @@ def get_rankings(matches):
 
     # Parse through all games and update elo of each player for each game
     for match in matches:
+        # Find winner/loser scores
         if match.score1 > match.score2:
             winners, losers = match.players1, match.players2
             win_score, lose_score = match.score1, match.score2
@@ -54,7 +59,9 @@ def get_rankings(matches):
 
 def predict_winner(matches, pl_a, pl_b):
     rankings = get_rankings(matches)
+    print("Rankings collected")
     expected_a, expected_b = expected_point_percentages(rankings[pl_a], rankings[pl_b])
+    print(expected_a, expected_b)
     if expected_a > expected_b:
         return (pl_a, expected_a * 100, pl_b)
     else:
