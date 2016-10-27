@@ -243,7 +243,7 @@ def processStats(slack, args, user):
     return simpleResp('```' + '\n'.join(allt) + '```')
 
 
-def processPredict(args):
+def processPredict(slack, args):
     m = loldb.getmatches()
     print(args)
     try:
@@ -256,7 +256,7 @@ def processPredict(args):
         allusers = slack.users.list().body
         nn = lambda x: getNiceName(allusers, x)
         predict_fmt = lambda w, od, l: "{} has a {:.1f}% chance of beating {}".format(nn(w), od, nn(l))
-        return (simpleResp(predict_fmt(eloranking.predict_winner(m, p1, p2))+"\n"))
+        return (simpleResp(predict_fmt(*eloranking.predict_winner(m, p1, p2))+"\n"))
     except ValueError:
         return simpleResp("Perhaps you didn't use \'vs\'?\n")
     except KeyError:
@@ -332,7 +332,7 @@ def processMessage(slack, config, _msg):
         elif cmd.lower().startswith('help'):
             return processHelp(args[1:])
         elif cmd.lower().startswith('predict'):
-            return processPredict(args[1:])
+            return processPredict(slack, args[1:])
         elif cmd.lower().startswith('stat'):
             return processStats(slack, args[1:], user)
         else:
