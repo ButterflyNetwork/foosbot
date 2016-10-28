@@ -17,24 +17,24 @@ slack = slacker.Slacker(config['slacktoken'])
 
 
 def getniceuser(users, n):
-    uc = filter(lambda x: x['name'] == n, users)
+    uc = list(filter(lambda x: x['name'] == n, users))
     if len(uc) != 1:
-        print "Unable to find user %s in slack, please check your config" % (n)
+        print("Unable to find user %s in slack, please check your config" % (n))
         sys.exit(1)
     else:
-        print "User %s found with id %s" % (n, uc[0]['id'])
+        print("User %s found with id %s" % (n, uc[0]['id']))
         return uc[0]['id']
 
 
 def mangleconfig(config):
     # Sort out friendly names in config
     chans = slack.channels.list().body['channels']
-    cc = filter(lambda x: x['name'] == config['fooschan'], chans)
+    cc = list(filter(lambda x: x['name'] == config['fooschan'], chans))
     if len(cc) != 1:
-        print "Unable to find channel %s in slack, please check your config" % (config['fooschan'])
+        print("Unable to find channel %s in slack, please check your config" % (config['fooschan']))
         sys.exit(1)
     else:
-        print "Channel %s found with id %s" % (config['fooschan'], cc[0]['id'])
+        print("Channel %s found with id %s" % (config['fooschan'], cc[0]['id']))
         config['fooschan'] = cc[0]['id']
 
     users = slack.users.list().body['members']
@@ -54,25 +54,25 @@ def onrecv(ws, message):
             ws.send(json.dumps(s) + '\n')
             time.sleep(1)
         except Exception as e:
-            print "ERROR SENDING"
-            print str(e)
+            print("ERROR SENDING")
+            print(str(e))
             exc_type, exc_value, exc_traceback = sys.exc_info()
             traceback.print_tb(exc_traceback)
 
 
 def onerr(ws, err):
-    print "ERROR: ", err
+    print("ERROR: ", err)
 
 
 def onclose(ws):
-    print "Socket closed"
+    print("Socket closed")
 
 
 def run_bot():
     rtminfo = slack.rtm.start()
     wsurl = rtminfo.body['url']
 
-    print "Attempting to connect to %s" % (wsurl)
+    print("Attempting to connect to %s" % (wsurl))
 
     ws = websocket.WebSocketApp(wsurl, on_message=onrecv,
                                 on_error=onerr, on_close=onclose)
@@ -85,9 +85,9 @@ mangleconfig(config)
 failcount = 0
 lastfail = datetime.datetime.now()
 while True:
-    print "Connecting"
+    print("Connecting")
     run_bot()
-    print "Connection lost..."
+    print("Connection lost...")
     now = datetime.datetime.now()
     timeran = now - lastfail
     lastfail = now
@@ -97,8 +97,8 @@ while True:
         failcount = 0
 
     if failcount > 10:
-        print "Too many failures, exiting"
+        print("Too many failures, exiting")
         break
     else:
-        print "Will reconnect in 60 seconds"
+        print("Will reconnect in 60 seconds")
         time.sleep(60)

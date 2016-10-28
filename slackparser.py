@@ -4,6 +4,7 @@ import sys
 import datetime
 
 import butterflyrank
+import eloranking
 import core
 import loldb
 
@@ -21,9 +22,9 @@ def simpleResp(text):
     return [simpleMsg(text)]
 
 
-def processSubmit(args):
     p1 = []
     p2 = []
+def processSubmit(slack, args):
 
     try:
         a1 = args.pop(0)
@@ -75,7 +76,7 @@ def processSubmit(args):
 
         mid = loldb.addmatch(m)
 
-        return simpleResp("Match %s successfully submitted" % (mid))
+        return simpleResp("Match %s successfully submitted" % (mid)) + processRank(slack, [])
 
     except Exception as e:
         print str(e)
@@ -188,16 +189,13 @@ def formatMatch(allusers, m):
 
 def processRank(slack, args):
     m = loldb.getmatches()
-    td = butterflyrank.get_rankings(m)
-    # print d
-    # print td
-    mc = loldb.getgamecounts()
-    lastg = loldb.getlastgameall()
-    out = formatRanking(slack, td, mc, lastg)
-    # legstr = ''
-    # if numpy.min(mc.values()) < 3:
-    #     legstr = '\n* has played less than 3 games'
-    return simpleResp('```' + '\n'.join(out) + '```')
+    elos = eloranking.get_rankings(m)
+    elos = sorted(elos.items(), key=lambda x: x[1], reverse=True)
+
+    allusers = slack.users.list().body
+    nn = lambda x: getNiceName(allusers, x)
+
+    return simpleResp('```{}\n```'.format('\n'.join(['{}: {}'.format(nn(k), v) for (k, v) in elos])))
 
 
 def processDelete(args):
@@ -224,7 +222,7 @@ def processStats(slack, args, user):
 
         uid = args[0][2:-1]
 
-    print "Stats UID: %s" % (uid)
+    print("Stats UID: %s" % (uid))
 
     allusers = slack.users.list().body
 
@@ -245,39 +243,26 @@ def processStats(slack, args, user):
     return simpleResp('```' + '\n'.join(allt) + '```')
 
 
-def processPredict(args):
+def processPredict(slack, args):
     m = loldb.getmatches()
-    d = butterflyrank.get_rankings(m)
-
-    players1 = []
-    while len(args) > 0 and args[0].startswith('<@'):
-        players1.append(args.pop(0)[2:-1])
-
-    if len(args) == 0:
-        return simpleResp("Was expecting a 'vs' at some point")
-
-    args.pop(0)
-
-    players2 = []
-    while len(args) > 0 and args[0].startswith('<@'):
-        players2.append(args.pop(0)[2:-1])
-
-    r1 = 0.0
-    r2 = 0.0
-    for p in players1:
-        if p not in d:
-            return simpleResp("I don't know the rank of <@%s>" % p)
-        r1 += d[p][0]
-
-    for p in players2:
-        if p not in d:
-            return simpleResp("I don't know the rank of <@%s>" % p)
-        r2 += d[p][0]
-
-    line1 = "I predict team %d%% will win." % (1 if r1 > r2 else 2)
-    line2 = "Now stop predicting and just play the game!"
-
-    return simpleResp('\n'.join([line1, line2]))
+    print(args)
+    try:
+        middle = args.index('vs')
+        print(middle)
+        p1 = args[middle-1][2:-1]
+        print(p1)
+        p2 = args[middle+1][2:-1]
+        print(p2)
+        allusers = slack.users.list().body
+        nn = lambda x: getNiceName(allusers, x)
+        predict_fmt = lambda w, od, l: "{} has a {:.1f}% chance of beating {}".format(nn(w), od, nn(l))
+        return (simpleResp(predict_fmt(*eloranking.predict_winner(m, p1, p2))+"\n"))
+    except ValueError:
+        return simpleResp("Perhaps you didn't use \'vs\'?\n")
+    except KeyError:
+        return simpleResp("Error in finding one or both players.\n")
+    except:
+        return simpleResp("An unknown error occured.")
 
 
 def processHelp(args):
@@ -301,28 +286,20 @@ def processHelp(args):
 
 def processMessage(slack, config, _msg):
     try:
-
         _fooschan = config['fooschan']
         _adminuser = config['adminuser']
-        # print "PROCESSING"
-        # print type(_msg)
         msg = json.loads(_msg)
-        # print "LOADED"
 
         if not 'type' in msg:
             return []
 
         if msg['type'] != 'message':
-            # print "NOTMSG"
             return []
         if msg['channel'] != _fooschan:
-            # print "NOTCHAN"
             return []
 
-        # print "INCHANNEL"
-
         if not 'text' in msg:
-            print "Ignoring possible edit?"
+            print("Ignoring possible edit?")
             return []
 
         text = msg['text']
@@ -345,7 +322,7 @@ def processMessage(slack, config, _msg):
         cmd = args[0]
 
         if cmd.lower() == 'result':
-            return processSubmit(args[1:])
+            return processSubmit(slack, args[1:])
         elif cmd.lower().startswith('rank'):
             return processRank(slack, args[1:])
         elif cmd.lower().startswith('delete'):
@@ -355,7 +332,7 @@ def processMessage(slack, config, _msg):
         elif cmd.lower().startswith('help'):
             return processHelp(args[1:])
         elif cmd.lower().startswith('predict'):
-            return processPredict(args[1:])
+            return processPredict(slack, args[1:])
         elif cmd.lower().startswith('stat'):
             return processStats(slack, args[1:], user)
         else:
