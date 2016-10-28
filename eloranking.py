@@ -56,6 +56,22 @@ def get_rankings(matches):
 
     return rankings
 
+def get_ws_ls(matches, players):
+    records = {p:[0,0] for p in players}
+    for match in matches:
+        if match.score1 > match.score2:
+            winners, losers = match.players1, match.players2
+        else:
+            winners, losers = match.players2, match.players1
+        for p in winners:
+            if p in records:
+                records[p][0] += 1
+        for p in losers:
+            if p in records:
+                records[p][1] += 1
+    return zip(*[records[p] for p in players])
+
+
 
 def predict_winner(matches, pl_a, pl_b):
     rankings = get_rankings(matches)
