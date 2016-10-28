@@ -21,11 +21,9 @@ def simpleMsg(text):
 def simpleResp(text):
     return [simpleMsg(text)]
 
-
+def processSubmit(slack, args):
     p1 = []
     p2 = []
-def processSubmit(slack, args):
-
     try:
         a1 = args.pop(0)
         if not a1.startswith("<@"):
