@@ -190,10 +190,17 @@ def processRank(slack, args):
     elos = eloranking.get_rankings(m)
     elos = sorted(elos.items(), key=lambda x: x[1], reverse=True)
 
+    uids, scores = zip(*elos)
+    ranks = range(1, len(elos)+1)
+    wins, losses = eloranking.get_ws_ls(m,uids)
+
+
     allusers = slack.users.list().body
     nn = lambda x: getNiceName(allusers, x)
+    longest_name = max(map(len, map(nn, uids)))
+    rankFmt = lambda u,s,r,w,l: "{r:>3}. {u:<{ln}}  {s}  {w:>2} - {l:>2}".format(u=u,r=r,s=s,w=w,l=l,ln=longest_name)
 
-    return simpleResp('```{}\n```'.format('\n'.join(['{}: {}'.format(nn(k), v) for (k, v) in elos])))
+    return simpleResp('```{}\n```'.format('\n'.join([rankFmt(*x) for x in zip(*[map(nn, uids),scores,ranks,wins,losses])])))
 
 
 def processDelete(args):
