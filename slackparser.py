@@ -22,9 +22,9 @@ def simpleResp(text):
     return [simpleMsg(text)]
 
 
-def processSubmit(args):
     p1 = []
     p2 = []
+def processSubmit(slack, args):
 
     try:
         a1 = args.pop(0)
@@ -76,7 +76,7 @@ def processSubmit(args):
 
         mid = loldb.addmatch(m)
 
-        return simpleResp("Match %s successfully submitted" % (mid))
+        return simpleResp("Match %s successfully submitted" % (mid)) + processRank(slack, [])
 
     except Exception as e:
         print str(e)
@@ -322,7 +322,7 @@ def processMessage(slack, config, _msg):
         cmd = args[0]
 
         if cmd.lower() == 'result':
-            return processSubmit(args[1:])
+            return processSubmit(slack, args[1:])
         elif cmd.lower().startswith('rank'):
             return processRank(slack, args[1:])
         elif cmd.lower().startswith('delete'):
