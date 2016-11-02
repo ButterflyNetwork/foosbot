@@ -57,11 +57,8 @@ def get_ws_ls(matches, players):
 
 def predict_winner(matches, pl_a, pl_b):
     rankings = get_rankings(matches)
-    print("Rankings collected")
-    expected_a, expected_b = expected_point_percentages(rankings[pl_a], rankings[pl_b])
-    print(expected_a, expected_b)
-    if expected_a > expected_b:
-        return (pl_a, expected_a * 100, pl_b)
-    else:
-        return (pl_b, expected_b * 100, pl_a)
+    prob_of_a_winning = expected(rankings[pl_a], rankings[pl_b])
+    if (prob_of_a_winning > 0.5):
+        return (pl_a, prob_of_a_winning * 100, pl_b)
+    return (pl_b, (1.0 - prob_of_a_winning) * 100, pl_a)
 
