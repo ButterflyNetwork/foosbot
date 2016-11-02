@@ -18,7 +18,7 @@ def get_rankings(matches):
     rankings = {player: 1500 for player in get_all_players(matches)}
 
     # Parse through all games and update elo of each player for each game
-    for match in matches:
+    for match in sorted(matches, key=lambda x: x.when):
         # Find winner/loser scores
         if match.score1 > match.score2:
             winners, losers = match.players1, match.players2
