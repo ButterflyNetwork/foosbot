@@ -1,7 +1,7 @@
 import itertools
 import math
 
-base_K = 100
+base_K = 70
 
 def get_all_players(matches):
     # collects UIDs for any player to have played in a match
@@ -9,31 +9,8 @@ def get_all_players(matches):
     return list(set([x for y in allp for x in y]))
 
 
-def adjusted_K(differential):
-    return math.log(abs(differential) + 1) * base_K
-
-
-def expected_point_percentages(elo_a, elo_b):
-    a = 1.0 / (1.0 + 10.0**(float(elo_b - elo_a) / 400.0))
-    b = 1.0 / (1.0 + 10.0**(float(elo_a - elo_b) / 400.0))
-    return (a, b)
-
-
-def elo_update(winner_elo, loser_elo, winner_score, loser_score):
-    winner_expected, loser_expected = expected_point_percentages(winner_elo, loser_elo)
-    assert(0.999 <= winner_expected + loser_expected <= 1.001)
-
-    winner_actual = float(winner_score) / (winner_score + loser_score)
-    loser_actual = float(loser_score) / (winner_score + loser_score)
-    assert(0.999 <= winner_actual + loser_actual <= 1.001)
-
-    K = adjusted_K(winner_score - loser_score)
-    adjustment = K * (winner_actual - winner_expected)
-
-    winner_elo += adjustment
-    loser_elo -= adjustment
-    # 0.5's are just to round to nearest int, rather than just down
-    return (int(winner_elo+0.5), int(loser_elo+0.5))
+def expected(elo_a, elo_b):
+    return 1.0 / (1.0 + 10**(float(elo_b - elo_a) / 400))
 
 
 def get_rankings(matches):
@@ -45,16 +22,21 @@ def get_rankings(matches):
         # Find winner/loser scores
         if match.score1 > match.score2:
             winners, losers = match.players1, match.players2
-            win_score, lose_score = match.score1, match.score2
         else:
             winners, losers = match.players2, match.players1
-            win_score, lose_score = match.score2, match.score1
 
-        # Update every pair of players
-        for w, l in itertools.product(winners, losers):
-            rankings[w], rankings[l] = elo_update(rankings[w], rankings[l], win_score, lose_score)
+        avg_win_elo = sum([rankings[p] for p in winners]) / len(winners)
+        avg_loss_elo = sum([rankings[p] for p in losers]) / len(losers)
+
+        for p in winners + losers:
+            # Effectively, the probability of player p winning has collapsed to either 0 or 1,
+            # and we're comparing that with the elo-calculated probability of winning.
+            prob_of_winning = expected(avg_win_elo, avg_loss_elo) if p in winners else expected(avg_loss_elo, avg_win_elo)
+            rankings[p] += int(base_K * ((1.0 if p in winners else 0.0) - prob_of_winning) + 0.5)
+            # The 0.5 at the end is just because it's the easiest way to round-to-nearest without numpy.
 
     return rankings
+
 
 def get_ws_ls(matches, players):
     records = {p:[0,0] for p in players}
