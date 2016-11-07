@@ -1,5 +1,5 @@
-import itertools
 import math
+from datetime import datetime
 
 base_K = 70
 
@@ -8,35 +8,47 @@ def get_all_players(matches):
     allp = [m.players1 + m.players2 for m in matches]
     return list(set([x for y in allp for x in y]))
 
-
 def expected(elo_a, elo_b):
     return 1.0 / (1.0 + 10**(float(elo_b - elo_a) / 400))
 
+def day_before(x):
+    return datetime(x.year, x.month, x.day - 1, x.hour, x.minute, x.second)
 
-def get_rankings(matches):
-    # Assign everyone an initial score of 1500
-    rankings = {player: 1500 for player in get_all_players(matches)}
-
-    # Parse through all games and update elo of each player for each game
-    for match in sorted(matches, key=lambda x: x.when):
+def compile_histories(matches):
+    histories = {}
+    for match in sorted(matches, key=lambda m: m.when):
         # Find winner/loser scores
         if match.score1 > match.score2:
             winners, losers = match.players1, match.players2
+            win_score, lose_score = match.score1, match.score2
         else:
             winners, losers = match.players2, match.players1
+            win_score, lose_score = match.score2, match.score1
 
-        avg_win_elo = sum([rankings[p] for p in winners]) / len(winners)
-        avg_loss_elo = sum([rankings[p] for p in losers]) / len(losers)
-
+        # Add a 0-entry to histories if player hasn't played yet.
         for p in winners + losers:
+            if p not in histories:
+                histories[p] = ([1500], [day_before(match.when)])
+
+        # Calculate average elos for winning and losing team
+        win_elo = sum([histories[p][0][-1] for p in winners]) / len(winners)
+        lose_elo = sum([histories[p][0][-1] for p in losers]) / len(losers)
+
+        # Calculate new elows and add to histories lists
+        for p in winners + losers:
+            histories[p][1].append(match.when)
             # Effectively, the probability of player p winning has collapsed to either 0 or 1,
             # and we're comparing that with the elo-calculated probability of winning.
-            prob_of_winning = expected(avg_win_elo, avg_loss_elo) if p in winners else expected(avg_loss_elo, avg_win_elo)
-            rankings[p] += int(base_K * ((1.0 if p in winners else 0.0) - prob_of_winning) + 0.5)
-            # The 0.5 at the end is just because it's the easiest way to round-to-nearest without numpy.
+            prob_of_winning = expected(win_elo, lose_elo) if p in winners else expected(lose_elo, win_elo)
+            histories[p][0].append( histories[p][0][-1]
+                                    + int(base_K * ((1.0 if p in winners else 0.0) - prob_of_winning)
+                                          + 0.5)) # The 0.5 is just the easiest way to round
 
-    return rankings
+    return histories
 
+def get_rankings(matches):
+    histories = compile_histories(matches)
+    return {p : histories[p][0][-1] for p in histories.keys()}
 
 def get_ws_ls(matches, players):
     records = {p:[0,0] for p in players}
@@ -52,8 +64,6 @@ def get_ws_ls(matches, players):
             if p in records:
                 records[p][1] += 1
     return zip(*[records[p] for p in players])
-
-
 
 def predict_winner(matches, pl_a, pl_b):
     rankings = get_rankings(matches)
