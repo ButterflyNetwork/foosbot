@@ -1,5 +1,7 @@
 import math
 from datetime import datetime
+import matplotlib.pylab as plt
+import matplotlib.dates as mdates
 
 base_K = 70
 
@@ -71,4 +73,29 @@ def predict_winner(matches, pl_a, pl_b):
     if (prob_of_a_winning > 0.5):
         return (pl_a, prob_of_a_winning * 100, pl_b)
     return (pl_b, (1.0 - prob_of_a_winning) * 100, pl_a)
+
+
+def get_stats_graph(matches, player_uid, player_name):
+    # Get personal history:
+    ph = compile_histories(matches)[player_uid]
+
+    # Basic plot setup
+    fig = plt.figure()
+    ax = plt.subplot()
+    # Add the history data
+    ax.plot(ph[1], ph[0], marker='*')
+    # Do the rest of the plot logistics/formatting
+    ax.xaxis.set_major_locator(mdates.AutoDateLocator(minticks=5, maxticks=10))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %-d')) # this is short month name, day
+    locs, labels = plt.xticks()
+    plt.setp(labels, rotation=25)
+    plt.axhline(y=1500, color='r')
+    plt.title("{}'s Foosbot Score History".format(str(player_name)))
+
+    # Save the file
+    filename = "/tmp/foosfigs/{}-statsgraph.png".format(str(player_name))
+    plt.savefig(filename, bbox_inches='tight', pad_inches=0.25)
+    return filename
+
+
 
