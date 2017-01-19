@@ -1,6 +1,6 @@
 import json
 import traceback
-import sys
+import sys, os
 import datetime
 
 import butterflyrank
@@ -125,11 +125,6 @@ def formatRanking(slack, d, mc, lastg):
         else:
             if timediff > daysall:
                 continue
-
-        # if badr[n[0]]:
-            # bad_cov.append(name)
-            # continue
-
         tc += 1
         if n[1][0] < l - 0.1:
             c = tc
@@ -216,6 +211,25 @@ def processRecent(slack, args):
     return simpleResp(msgt)
 
 
+def send_stats_graph(slack, args, user, channel):
+    if len(args) == 0:
+        uid = user
+    elif len(args) != 1:
+        return None
+    else:
+        if not args[0].startswith("<@"):
+            return None
+        uid = args[0][2:-1]
+
+    allusers = slack.users.list().body
+    m = loldb.getmatches()
+    fig_file = eloranking.get_stats_graph(m, uid, getNiceName(allusers, uid))
+    channel_id = filter(lambda x: x['name'] == channel
+                        slack.channels.list().body['channels'])[0]['id']
+    slack.files.upload(fig_file, channels=channel_id)
+    os.remove(fig_file)
+
+
 def processStats(slack, args, user):
     if len(args) == 0:
         uid = user
@@ -227,25 +241,23 @@ def processStats(slack, args, user):
 
         uid = args[0][2:-1]
 
-    print("Stats UID: %s" % (uid))
-
-    allusers = slack.users.list().body
-
     m = loldb.getmatches()
-    lg = loldb.getlastgame(uid)
-    td = butterflyrank.get_rankings(m)
+    allusers = slack.users.list().body
+    last_game = loldb.getlastgame(uid)
 
-    nn = getNiceName(allusers, uid)
 
-    r1t = "Stats for %s" % nn
-    div = '-' * (len(r1t))
-    r1ta = "Skill level (0-10): %.1f" % td[uid][0]
-    r2t = "W-L: %i-%i" % (td[uid][1], td[uid][2])
-    r2ta = "Last match: %s" % formatMatch(allusers, lg)
+    elos = eloranking.compile_histories(m)[uid]
+    wins, losses = eloranking.get_ws_ls(m, [uid])
 
-    allt = [r1t, div, r1ta, r2t, r2ta]
+    name = getNiceName(allusers, uid)
 
-    return simpleResp('```' + '\n'.join(allt) + '```')
+    message = "Stats for {} since {}\n".format(name, elos[1][0].strftime("%b %-d %Y"))
+    message += "-" * len(message) + "\n"
+    message += "Current score: {}\n".format(elos[0][-1])
+    message += "Win-Loss Record: {}-{}\n".format(wins[0], losses[0])
+    message += "Last match: {}\n".format(formatMatch(allusers, last_game))
+
+    return simpleResp('```\n' + message + '```')
 
 
 def processPredict(slack, args):
@@ -289,7 +301,7 @@ def processHelp(args):
             return simpleResp("Sorry, I don't know about %s" % args[0])
 
 
-def processMessage(slack, config, _msg):
+def processMessage(slack, config, _msg, channel):
     try:
         _fooschan = config['fooschan']
         _adminuser = config['adminuser']
@@ -312,8 +324,6 @@ def processMessage(slack, config, _msg):
 
         if 'user' in msg:
             user = msg['user']
-
-        # print text
 
         if not text.startswith('<@%s>' % config['botuser']):
             return []
@@ -339,6 +349,7 @@ def processMessage(slack, config, _msg):
         elif cmd.lower().startswith('predict'):
             return processPredict(slack, args[1:])
         elif cmd.lower().startswith('stat'):
+            send_stats_graph(slack, args[1:], user, channel)
             return processStats(slack, args[1:], user)
         else:
             return simpleResp("I didn't understand the command %s" % (cmd))
