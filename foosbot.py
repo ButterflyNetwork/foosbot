@@ -44,7 +44,7 @@ def mangleconfig(config):
 
 def onrecv(ws, message):
     # print message
-    sendback = slackparser.processMessage(slack, config, message)
+    sendback = slackparser.processMessage(slack, config, message, config['fooschan'])
     # print sendback
     for s in sendback:
         s['channel'] = config['fooschan']

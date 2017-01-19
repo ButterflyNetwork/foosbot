@@ -211,7 +211,7 @@ def processRecent(slack, args):
     return simpleResp(msgt)
 
 
-def send_stats_graph(slack, args, user):
+def send_stats_graph(slack, args, user, channel):
     if len(args) == 0:
         uid = user
     elif len(args) != 1:
@@ -224,7 +224,7 @@ def send_stats_graph(slack, args, user):
     allusers = slack.users.list().body
     m = loldb.getmatches()
     fig_file = eloranking.get_stats_graph(m, uid, getNiceName(allusers, uid))
-    channel_id = filter(lambda x: x['name'] == 'foosball-dev',
+    channel_id = filter(lambda x: x['name'] == channel
                         slack.channels.list().body['channels'])[0]['id']
     slack.files.upload(fig_file, channels=channel_id)
     os.remove(fig_file)
@@ -301,7 +301,7 @@ def processHelp(args):
             return simpleResp("Sorry, I don't know about %s" % args[0])
 
 
-def processMessage(slack, config, _msg):
+def processMessage(slack, config, _msg, channel):
     try:
         _fooschan = config['fooschan']
         _adminuser = config['adminuser']
@@ -349,7 +349,7 @@ def processMessage(slack, config, _msg):
         elif cmd.lower().startswith('predict'):
             return processPredict(slack, args[1:])
         elif cmd.lower().startswith('stat'):
-            send_stats_graph(slack, args[1:], user)
+            send_stats_graph(slack, args[1:], user, channel)
             return processStats(slack, args[1:], user)
         else:
             return simpleResp("I didn't understand the command %s" % (cmd))
