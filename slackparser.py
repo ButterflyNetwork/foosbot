@@ -224,7 +224,7 @@ def send_stats_graph(slack, args, user, channel):
     allusers = slack.users.list().body
     m = loldb.getmatches()
     fig_file = eloranking.get_stats_graph(m, uid, getNiceName(allusers, uid))
-    channel_id = filter(lambda x: x['name'] == channel
+    channel_id = filter(lambda x: x['name'] == channel,
                         slack.channels.list().body['channels'])[0]['id']
     slack.files.upload(fig_file, channels=channel_id)
     os.remove(fig_file)
