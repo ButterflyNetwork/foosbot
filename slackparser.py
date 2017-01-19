@@ -216,6 +216,25 @@ def processRecent(slack, args):
     return simpleResp(msgt)
 
 
+def send_stats_graph(slack, args, user):
+    if len(args) == 0:
+        uid = user
+    elif len(args) != 1:
+        return None
+    else:
+        if not args[0].startswith("<@"):
+            return None
+        uid = args[0][2:-1]
+
+    allusers = slack.users.list().body
+    m = loldb.getmatches()
+    fig_file = eloranking.get_stats_graph(m, uid, getNiceName(allusers, uid))
+    channel_id = filter(lambda x: x['name'] == 'foosball-dev',
+                        slack.channels.list().body['channels'])[0]['id']
+    slack.files.upload(fig_file, channels=channel_id)
+    os.remove(fig_file)
+
+
 def processStats(slack, args, user):
     if len(args) == 0:
         uid = user
@@ -339,6 +358,7 @@ def processMessage(slack, config, _msg):
         elif cmd.lower().startswith('predict'):
             return processPredict(slack, args[1:])
         elif cmd.lower().startswith('stat'):
+            send_stats_graph(slack, args[1:], user)
             return processStats(slack, args[1:], user)
         else:
             return simpleResp("I didn't understand the command %s" % (cmd))
