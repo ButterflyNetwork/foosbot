@@ -36,7 +36,7 @@ def compile_histories(matches):
         win_elo = sum([histories[p][0][-1] for p in winners]) / len(winners)
         lose_elo = sum([histories[p][0][-1] for p in losers]) / len(losers)
 
-        # Calculate new elows and add to histories lists
+        # Calculate new elos and add to histories lists
         for p in winners + losers:
             histories[p][1].append(match.when)
             # Effectively, the probability of player p winning has collapsed to either 0 or 1,
@@ -67,12 +67,16 @@ def get_ws_ls(matches, players):
                 records[p][1] += 1
     return zip(*[records[p] for p in players])
 
-def predict_winner(matches, pl_a, pl_b):
+
+def predict_winner(matches, pls_a, pls_b):
     rankings = get_rankings(matches)
-    prob_of_a_winning = expected(rankings[pl_a], rankings[pl_b])
+    pl_a_score = sum(map(lambda p: rankings[p], pls_a)) / len(pls_a)
+    pl_b_score = sum(map(lambda p: rankings[p], pls_b)) / len(pls_b)
+
+    prob_of_a_winning = expected(pl_a_score, pl_b_score)
     if (prob_of_a_winning > 0.5):
-        return (pl_a, prob_of_a_winning * 100, pl_b)
-    return (pl_b, (1.0 - prob_of_a_winning) * 100, pl_a)
+        return (pls_a, prob_of_a_winning * 100, pls_b)
+    return (pls_b, (1.0 - prob_of_a_winning) * 100, pls_a)
 
 
 def get_stats_graph(matches, player_uid, player_name):
