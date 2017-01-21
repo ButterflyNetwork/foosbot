@@ -1,17 +1,13 @@
 #!/usr/bin/env python
 
-import slacker
-# import json
-import websocket
-import slackparser
-import json
-import traceback
-import time
-import sys
-import yaml
 import datetime
+import json
+import slacker
+import sys
+import time
+import websocket
+import yaml
 
-import foos
 from parse import on_message
 
 config = yaml.load(open('config.yaml'))

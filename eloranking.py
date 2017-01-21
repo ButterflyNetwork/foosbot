@@ -48,9 +48,11 @@ def compile_histories(matches):
 
     return histories
 
+
 def get_rankings(matches):
     histories = compile_histories(matches)
     return {p : histories[p][0][-1] for p in histories.keys()}
+
 
 def get_ws_ls(matches, players):
     records = {p:[0,0] for p in players}
@@ -79,25 +81,25 @@ def predict_winner(matches, pls_a, pls_b):
     return (pls_b, (1.0 - prob_of_a_winning) * 100, pls_a)
 
 
-def get_stats_graph(matches, player_uid, player_name):
+def get_stats_graph(matches, player_uids, player_names):
     # Get personal history:
-    ph = compile_histories(matches)[player_uid]
+    histories = compile_histories(matches)
 
     # Basic plot setup
     fig = plt.figure()
     ax = plt.subplot()
     # Add the history data
-    ax.plot(ph[1], ph[0], marker='*')
+    for p in player_uids:
+        ax.plot(histories[p][1], histories[p][0], marker='*')
     # Do the rest of the plot logistics/formatting
     ax.xaxis.set_major_locator(mdates.AutoDateLocator(minticks=5, maxticks=10))
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %-d')) # this is short month name, day
     locs, labels = plt.xticks()
     plt.setp(labels, rotation=25)
-    plt.axhline(y=1500, color='r')
-    plt.title("{}'s Foosbot Score History".format(str(player_name)))
+    plt.axhline(y=1500, color='black')
 
     # Save the file
-    filename = "/tmp/foosfigs/{}-statsgraph.png".format(str(player_name))
+    filename = "/tmp/foosfigs/{}-stats.png".format('-'.join(player_names))
     plt.savefig(filename, bbox_inches='tight', pad_inches=0.25)
     return filename
 

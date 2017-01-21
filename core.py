@@ -1,5 +1,6 @@
 from collections import namedtuple
 import datetime
+import os
 
 import eloranking
 import loldb
@@ -54,6 +55,16 @@ def stats(users, context):
     if users == []:
         users = [context.sender]
 
+    uppercase_users = map(lambda x: x.upper(), users)
+    user_names = map(lambda x: get_name(x, context.users), users)
+    print(uppercase_users, user_names)
+    fig_file = eloranking.get_stats_graph(context.matches,
+                                          uppercase_users,
+                                          user_names)
+    print(fig_file)
+    reply_with_file(fig_file, context)
+    os.remove(fig_file)
+
     # Would like to do all users at once, but not currently supported.
     for u in users:
         u = u.upper()
@@ -61,8 +72,6 @@ def stats(users, context):
 
         elos = eloranking.compile_histories(context.matches)[u]
         wins, losses = eloranking.get_ws_ls(context.matches, [u])
-        fig_file = eloranking.get_stats_graph(context.matches, u, name)
-        reply_with_file(fig_file, context)
 
         message = "Stats for {} since {}\n".format(name, elos[1][0].strftime("%b %-d %Y"))
         message += "-" * len(message) + "\n"
@@ -74,7 +83,7 @@ def stats(users, context):
                                                ' and '.join(map(n, last_game.players2)),
                                                last_game.score1,
                                                last_game.score2)
-        message += "Last match: {}\n".format(last_game)
+        message += "Last match: {}".format(last_game)
 
         reply_with_message(message, context, fixed_width=True)
 

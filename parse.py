@@ -9,7 +9,25 @@ stats_command   = r"stats?(?P<who>.*)"
 results_command = r"results? (?P<who>.*)\s(?P<score1>\d{1,2})\s?-\s?(?P<score2>\d{1,2})"
 predict_command = r"predict (?P<who>.*)"
 delete_command  = r"delete (?P<what>.*)"
+help_command = r"help"
 
+help_message = """Basic usage:
+    - In a public channel (like #foosball), use `@foosbot command`
+    - You can also private message foosbot, and just put `command` (i.e., no @foosbot)
+```
+Commands:
+    rank
+        - Show the ranked listing of all players.
+    stats [<player> <player>]
+        - View basic stats (including a graph!) for one or more players.
+        - If you don't specify a user, your own stats are given.
+    result <player> [<player>] vs <player> [<player>]
+        - Submit the result of a match with one or two players on each side.
+    predict <player> [<player>] vs <player> [<player>]
+        - Predict the result of a match with one or more players on each side.
+    delete <match_id>
+        - Delete an erroneously submitted match, using the match ID from the submission.
+```"""
 
 def get_teams(s):
     return re.split('vs', s, maxsplit=1)
@@ -38,6 +56,11 @@ def on_message(slack, config, message):
                            bot_id=config['bot_id'],
                            users=config['users'],
                            matches=loldb.getmatches())
+
+    # Look for HELP
+    matches_help = re.search(help_command, text)
+    if matches_help:
+        core.reply_with_message(help_message, context)
 
     # Look for RANK
     matches_rank = re.search(rank_command, text)
