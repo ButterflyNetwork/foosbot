@@ -29,6 +29,12 @@ Commands:
         - Delete an erroneously submitted match, using the match ID from the submission.
 ```"""
 
+didnt_understand_message = """
+Sorry, I think you were talking to me, but I didn't understand that message.
+Try again, or let me know if you need help.
+"""
+
+
 def get_teams(s):
     return re.split('vs', s, maxsplit=1)
 
@@ -61,6 +67,7 @@ def on_message(slack, config, message):
     matches_help = re.search(help_command, text)
     if matches_help:
         core.reply_with_message(help_message, context)
+        return
 
     # Look for RANK
     matches_rank = re.search(rank_command, text)
@@ -93,5 +100,10 @@ def on_message(slack, config, message):
     matches_delete = re.search(delete_command, text)
     if matches_delete:
         core.delete(game_id=matches_delete.group('what'), context=context)
+        return
+
+    core.reply_with_message(didnt_understand_message, context)
+
+
 
 
