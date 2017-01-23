@@ -3,7 +3,7 @@ import numpy
 import collections
 import datetime
 
-import butterflyrank
+import sys
 
 _dbfile = 'foosdb.pickle'
 _dbhandle = None
@@ -15,9 +15,10 @@ def _getdb():
         try:
             _dbhandle = pickle.load(open(_dbfile))
         except:
+            print sys.exc_info()
             print("Unable to load database, creating new one")
             _dbhandle = _newdb()
-    print("Db dump: ", _dbhandle)
+    # print("Db dump: ", _dbhandle)
     return _dbhandle
 
 
@@ -29,10 +30,6 @@ def _commitback():
 
 def _newdb():
     return {'matches': {}}
-
-
-def getrankings():
-    return butterflyrank.get_rankings(_getdb()['matches'].values())
 
 
 def getmatches():

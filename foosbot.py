@@ -1,63 +1,42 @@
 #!/usr/bin/env python
 
-import slacker
-# import json
-import websocket
-import slackparser
-import json
-import traceback
-import time
-import sys
-import yaml
 import datetime
+import json
+import slacker
+import sys
+import time
+import websocket
+import yaml
 
+from parse import on_message
 
 config = yaml.load(open('config.yaml'))
 slack = slacker.Slacker(config['slacktoken'])
+config['bot_id'] = slack.auth.test().body['user_id']
+config['users'] = slack.users.list().body['members']
 
 
 def getniceuser(users, n):
     uc = list(filter(lambda x: x['name'] == n, users))
     if len(uc) != 1:
         print("Unable to find user %s in slack, please check your config" % (n))
-        sys.exit(1)
     else:
-        print("User %s found with id %s" % (n, uc[0]['id']))
         return uc[0]['id']
 
 
 def mangleconfig(config):
-    # Sort out friendly names in config
-    chans = slack.channels.list().body['channels']
-    cc = list(filter(lambda x: x['name'] == config['fooschan'], chans))
-    if len(cc) != 1:
-        print("Unable to find channel %s in slack, please check your config" % (config['fooschan']))
-        sys.exit(1)
-    else:
-        print("Channel %s found with id %s" % (config['fooschan'], cc[0]['id']))
-        config['fooschan'] = cc[0]['id']
-
-    users = slack.users.list().body['members']
+    users = config['users']
     config['adminuser'] = getniceuser(users, config['adminuser'])
     config['botuser'] = getniceuser(users, config['botuser'])
 
 
 def onrecv(ws, message):
-    # print message
-    sendback = slackparser.processMessage(slack, config, message, config['fooschan'])
-    # print sendback
-    for s in sendback:
-        s['channel'] = config['fooschan']
-        # print ss
-        try:
-            # print "SENDING", json.dumps(s)
-            ws.send(json.dumps(s) + '\n')
-            time.sleep(1)
-        except Exception as e:
-            print("ERROR SENDING")
-            print(str(e))
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            traceback.print_tb(exc_traceback)
+    # At this point, the bot should only reply to messages.
+    message = json.loads(message)
+    if message['type'] == "message":
+        on_message(slack, config, message)
+    else:
+        pass
 
 
 def onerr(ws, err):
@@ -82,23 +61,24 @@ def run_bot():
 
 mangleconfig(config)
 
-failcount = 0
-lastfail = datetime.datetime.now()
-while True:
-    print("Connecting")
-    run_bot()
-    print("Connection lost...")
-    now = datetime.datetime.now()
-    timeran = now - lastfail
-    lastfail = now
-    if timeran.total_seconds() < 3600:
-        failcount += 1
-    else:
-        failcount = 0
+if __name__ == "__main__":
+    failcount = 0
+    lastfail = datetime.datetime.now()
+    while True:
+        print("Connecting")
+        run_bot()
+        print("Connection lost...")
+        now = datetime.datetime.now()
+        timeran = now - lastfail
+        lastfail = now
+        if timeran.total_seconds() < 3600:
+            failcount += 1
+        else:
+            failcount = 0
 
-    if failcount > 10:
-        print("Too many failures, exiting")
-        break
-    else:
-        print("Will reconnect in 60 seconds")
-        time.sleep(60)
+        if failcount > 10:
+            print("Too many failures, exiting")
+            break
+        else:
+            print("Will reconnect in 60 seconds")
+            time.sleep(60)
